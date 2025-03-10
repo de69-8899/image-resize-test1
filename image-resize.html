@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dark Mode Image Resizer</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --accent-color: #1e88e5;
+      --input-bg: #1d1d1d;
+      --border-color: #333;
+      --button-bg: #1e88e5;
+      --button-text: #fff;
+      --button-hover: #1565c0;
+    }
+    
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: var(--input-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    
+    label {
+      display: block;
+      margin: 15px 0 5px;
+    }
+    
+    input[type="file"],
+    input[type="number"],
+    button {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+    }
+    
+    input[type="number"] {
+      margin-bottom: 10px;
+    }
+    
+    input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    
+    button {
+      margin-top: 15px;
+      background-color: var(--button-bg);
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    
+    button:hover {
+      background-color: var(--button-hover);
+    }
+    
+    #canvas {
+      display: block;
+      margin: 20px auto;
+      max-width: 100%;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+    
+    .flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .flex label {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Image Resizer</h1>
+  <div class="container">
+    <label for="fileInput">Upload an Image:</label>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <label for="widthInput">Width (px):</label>
+    <input type="number" id="widthInput" placeholder="Width">
+
+    <label for="heightInput">Height (px):</label>
+    <input type="number" id="heightInput" placeholder="Height">
+
+    <div class="flex">
+      <div>
+        <input type="checkbox" id="keepRatio" checked>
+        <label for="keepRatio">Keep aspect ratio</label>
+      </div>
+    </div>
+
+    <button id="resizeBtn">Resize Image</button>
+    <button id="downloadBtn" style="display:none;">Download Image</button>
+  </div>
+  
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const widthInput = document.getElementById('widthInput');
+    const heightInput = document.getElementById('heightInput');
+    const keepRatio = document.getElementById('keepRatio');
+    const resizeBtn = document.getElementById('resizeBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let originalImage = new Image();
+    let originalWidth, originalHeight;
+
+    // Load selected image
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        originalImage = new Image();
+        originalImage.onload = function() {
+          originalWidth = originalImage.width;
+          originalHeight = originalImage.height;
+          // Display the original image on the canvas
+          canvas.width = originalWidth;
+          canvas.height = originalHeight;
+          ctx.drawImage(originalImage, 0, 0);
+          // Populate width/height inputs with original dimensions
+          widthInput.value = originalWidth;
+          heightInput.value = originalHeight;
+        }
+        originalImage.src = event.target.result;
+      }
+      reader.readAsDataURL(file);
+    });
+
+    // Keep aspect ratio: update height when width changes and vice versa.
+    widthInput.addEventListener('input', () => {
+      if (keepRatio.checked && originalWidth) {
+        const newWidth = parseInt(widthInput.value) || 0;
+        const newHeight = Math.round(newWidth * originalHeight / originalWidth);
+        heightInput.value = newHeight;
+      }
+    });
+
+    heightInput.addEventListener('input', () => {
+      if (keepRatio.checked && originalHeight) {
+        const newHeight = parseInt(heightInput.value) || 0;
+        const newWidth = Math.round(newHeight * originalWidth / originalHeight);
+        widthInput.value = newWidth;
+      }
+    });
+
+    // Resize image and display on canvas
+    resizeBtn.addEventListener('click', () => {
+      const newWidth = parseInt(widthInput.value);
+      const newHeight = parseInt(heightInput.value);
+      if (!newWidth || !newHeight) {
+        alert('Please enter valid dimensions.');
+        return;
+      }
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      ctx.clearRect(0, 0, newWidth, newHeight);
+      ctx.drawImage(originalImage, 0, 0, originalWidth, originalHeight, 0, 0, newWidth, newHeight);
+      downloadBtn.style.display = 'block';
+    });
+
+    // Download the resized image
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'resized-image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  </script>
+</body>
+</html>
